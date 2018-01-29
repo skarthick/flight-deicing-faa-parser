@@ -1,16 +1,41 @@
 package com.indmex.polygon.json;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PolygonJson {
-	private List<Childpolygon> childpolygon = null;
+	private List<PolygonJson> childpolygon = null;
 	private String polygonName;
+	private transient int polygonId;
+	private transient String geoJson;
+	private transient List<Point> coOrdinates = new ArrayList<Point>();
 	private boolean blocked;
 	private List<FlightInPoly> flightInPoly = null;
-	public List<Childpolygon> getChildpolygon() {
+	
+	
+	
+	public List<Point> getCoOrdinates() {
+		return coOrdinates;
+	}
+	public void setCoOrdinates(List<Point> coOrdinates) {
+		this.coOrdinates = coOrdinates;
+	}
+	public int getPolygonId() {
+		return polygonId;
+	}
+	public void setPolygonId(int polygonId) {
+		this.polygonId = polygonId;
+	}
+	public String getGeoJson() {
+		return geoJson;
+	}
+	public void setGeoJson(String geoJson) {
+		this.geoJson = geoJson;
+	}
+	public List<PolygonJson> getChildpolygon() {
 		return childpolygon;
 	}
-	public void setChildpolygon(List<Childpolygon> childpolygon) {
+	public void setChildpolygon(List<PolygonJson> childpolygon) {
 		this.childpolygon = childpolygon;
 	}
 	public String getPolygonName() {

@@ -4,7 +4,7 @@ public class FlightInPoly {
 	
 	private String flightID;
 	private String aircraftType;
-	private String inTime;
+	private long inTime;
 	public String getFlightID() {
 		return flightID;
 	}
@@ -17,10 +17,10 @@ public class FlightInPoly {
 	public void setAircraftType(String aircraftType) {
 		this.aircraftType = aircraftType;
 	}
-	public String getInTime() {
+	public long getInTime() {
 		return inTime;
 	}
-	public void setInTime(String inTime) {
+	public void setInTime(long inTime) {
 		this.inTime = inTime;
 	}
 	@Override
