@@ -6,7 +6,7 @@ import java.util.List;
 public class PolygonJson {
 	private List<PolygonJson> childpolygon = null;
 	private String polygonName;
-	private transient int polygonId;
+	private int polygonId;
 	private transient String geoJson;
 	private transient List<Point> coOrdinates = new ArrayList<Point>();
 	private boolean blocked;
@@ -61,6 +61,28 @@ public class PolygonJson {
 		return "PolygonJson [childpolygon=" + childpolygon + ", polygonName=" + polygonName + ", blocked=" + blocked
 				+ ", flightInPoly=" + flightInPoly + "]";
 	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + polygonId;
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		PolygonJson other = (PolygonJson) obj;
+		if (polygonId != other.polygonId)
+			return false;
+		return true;
+	}
+	
+	
 	
 	
 

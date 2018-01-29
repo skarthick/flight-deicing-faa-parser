@@ -2,6 +2,7 @@ package com.indmex.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -10,6 +11,7 @@ import java.util.concurrent.Future;
 import com.google.gson.Gson;
 import com.indmex.dao.UtilDao;
 import com.indmex.polygon.json.FlightInPoly;
+import com.indmex.polygon.json.FlightPolygonList;
 import com.indmex.polygon.json.Point;
 import com.indmex.polygon.json.PolygonJson;
 
@@ -19,7 +21,7 @@ public class ServiceUtil {
 	private CopyOnWriteArrayList<PolygonJson> polygonJsonList = new CopyOnWriteArrayList<PolygonJson>();
 	PolygonJson polygonJson;
 	private Gson gson;
-	
+	private ConcurrentHashMap<String, List<FlightPolygonList>> polygonFilghtList = new ConcurrentHashMap<String, List<FlightPolygonList>>();
 	
 	public void pointInPolygon(float latitude, float longitude, List<PolygonJson> polyJsonsList) {
 		for (PolygonJson polygonJson : polyJsonsList) {
@@ -43,6 +45,72 @@ public class ServiceUtil {
 
 		}
 
+	}
+	
+	
+	private void removeFlightFromPolygon(String flightId){
+		List<FlightPolygonList> flightList = polygonFilghtList.get(flightId);
+		if(flightList != null){
+			for(FlightPolygonList flightPolygonList : flightList){
+				if(flightPolygonList.isChild()){
+					Integer parentPolygonId = 	flightPolygonList.getParentPolygonId();
+					PolygonJson parentPolygonJson =  getPolygonJson(parentPolygonId, polygonJsonList);
+					int childPolygonId = flightPolygonList.getPolygonId();
+					PolygonJson childPolygonJson =   getPolygonJson(childPolygonId, parentPolygonJson.getChildpolygon());
+					removeFlight(childPolygonJson, flightId);
+				}else{
+					Integer polygonId = 	flightPolygonList.getPolygonId();
+					PolygonJson polygonJson =  getPolygonJson(polygonId, polygonJsonList);
+					removeFlight(polygonJson, flightId);
+				}
+			}
+		}
+	}
+	
+	
+	
+	private void removeFlight(PolygonJson polygonJson,String flightId){
+		List<FlightInPoly> flightInPolyList = polygonJson.getFlightInPoly();
+		FlightInPoly tempFlightInPoly = new FlightInPoly();
+		tempFlightInPoly.setFlightID(flightId);
+		int pos = flightInPolyList.indexOf(tempFlightInPoly);
+		if(pos != -1){
+			flightInPolyList.remove(pos);
+		}
+	}
+	
+	
+	private PolygonJson getPolygonJson(Integer polygonId,List<PolygonJson> polygonsList){
+		PolygonJson tempPolygonJson = new PolygonJson();
+		tempPolygonJson.setPolygonId(polygonId);
+		int pos = polygonsList.indexOf(tempPolygonJson);
+		if(pos != -1){
+			PolygonJson polygonJson = polygonsList.get(pos);
+			return polygonJson;
+		}
+		return null;
+	}
+	
+	
+	public void addFlightInPoly(String flightId,Integer polygonId,Integer parentPolygonId){
+		List<FlightPolygonList> flightList = polygonFilghtList.get(flightId);
+		if(flightList == null){
+			flightList = new ArrayList<FlightPolygonList>();
+			polygonFilghtList.put(flightId, flightList);
+		}
+		FlightPolygonList flightPolygonList = new FlightPolygonList();
+		flightPolygonList.setPolygonId(polygonId);
+		
+		if(!flightList.contains(flightPolygonList)){
+			boolean isChildPoly = true;
+			if(parentPolygonId == null){
+				parentPolygonId = polygonId;
+				isChildPoly = false;
+			}
+			flightPolygonList.setChild(isChildPoly);
+			flightPolygonList.setParentPolygonId(parentPolygonId);
+			flightList.add(flightPolygonList);
+		}
 	}
 	
 

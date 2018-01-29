@@ -27,6 +27,29 @@ public class FlightInPoly {
 	public String toString() {
 		return "FlightInPoly [flightID=" + flightID + ", aircraftType=" + aircraftType + ", inTime=" + inTime + "]";
 	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((flightID == null) ? 0 : flightID.hashCode());
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		FlightInPoly other = (FlightInPoly) obj;
+		if (flightID == null) {
+			if (other.flightID != null)
+				return false;
+		} else if (!flightID.equals(other.flightID))
+			return false;
+		return true;
+	}
 	
 	
 
