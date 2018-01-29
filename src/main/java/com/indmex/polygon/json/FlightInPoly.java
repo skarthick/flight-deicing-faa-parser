@@ -50,7 +50,5 @@ public class FlightInPoly {
 			return false;
 		return true;
 	}
-	
-	
 
 }

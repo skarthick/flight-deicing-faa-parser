@@ -118,7 +118,7 @@ public class ServiceUtil {
 		try {
 			utilDao.loadPolygonData(null, polygonJsonList);
 			// Check flight is in polygon or not
-			validateFlightInPolygon();
+			
 			String result = gson.toJson(polygonJsonList);
 			return result;
 		} catch (Exception e) {
@@ -127,61 +127,7 @@ public class ServiceUtil {
 		return null;
 	}
 
-	/**
-	 * Check whether 
-	 * @throws Exception
-	 */
-	private void validateFlightInPolygon() throws Exception {
-		ExecutorService service = Executors.newFixedThreadPool(10);
-		List<Future<Runnable>> futures = new ArrayList<Future<Runnable>>();
-		for (PolygonJson polygonJson : polygonJsonList) {
-			Future f = service.submit(new FlightTimeValidator(polygonJson));
-			futures.add(f);
-		}
-
-		// wait for all tasks to complete before continuing
-		for (Future<Runnable> f : futures) {
-			f.get();
-		}
-		service.shutdownNow();
-	}
-
 	
-
-	private class FlightTimeValidator implements Runnable {
-		PolygonJson polygonJson;
-		long currentTime;
-
-		public FlightTimeValidator(PolygonJson polygonJson) {
-			this.polygonJson = polygonJson;
-		}
-
-		public void run() {
-			List<FlightInPoly> flightInPolies = polygonJson.getFlightInPoly();
-			doProcess(flightInPolies);
-			List<PolygonJson> childPolyList = polygonJson.getChildpolygon();
-			for (PolygonJson polygonJson : childPolyList) {
-				doProcess(polygonJson.getFlightInPoly());
-			}
-		}
-
-		private void doProcess(List<FlightInPoly> flightInPolyList) {
-			List<Integer> positions = new ArrayList<Integer>();
-			int pos = 0;
-			for (FlightInPoly flightInPoly : flightInPolyList) {
-				long filghtInTime = flightInPoly.getInTime();
-				if ((currentTime - filghtInTime) > 5000) {
-					positions.add(pos);
-				}
-				pos++;
-			}
-			for (Integer i : positions) {
-				flightInPolyList.remove(i);
-			}
-
-		}
-
-	}
 
 	
 
