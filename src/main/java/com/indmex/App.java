@@ -9,7 +9,6 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.slf4j.Logger;
@@ -30,7 +29,7 @@ public class App
 	private String toConnectionUrl;
 	private String toTopicName;
 	private String fromTopicName;
-	private String currentAirport;
+	public String currentAirport;
 	
 	public App(String aPropertiesFileLocation) { 
 		loadPropertiesFromFile(aPropertiesFileLocation);

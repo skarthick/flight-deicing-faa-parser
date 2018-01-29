@@ -1,6 +1,7 @@
 package com.indmex.dao;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,29 +12,35 @@ import com.google.gson.Gson;
 import com.indmex.polygon.json.GeoJson;
 import com.indmex.polygon.json.Point;
 import com.indmex.polygon.json.PolygonJson;
+import com.indmex.service.PropertiesReader;
 
-public  class UtilDao {
-	
-	Connection connection = null; 
+public class UtilDao {
+
+	Connection connection = null;
 	Gson gson = null;
-	
-	public UtilDao(){
-		
+
+	public UtilDao() {
+
 	}
-	
+
 	/**
-	 * Get Polygon and corresponding child polygon data based on given airport code
+	 * Get Polygon and corresponding child polygon data based on given airport
+	 * code
+	 * 
 	 * @param airportCode
 	 * @param polygonJsonList
 	 */
-	public void loadPolygonData(String airportCode,List<PolygonJson> polygonJsonList){
+	public void loadPolygonData( List<PolygonJson> polygonJsonList) {
 		PreparedStatement queryStatement = null;
 		ResultSet queryResponse = null;
+		openConnection();
 		try {
-			queryStatement = connection.prepareStatement("select name,geojson,polygondataid from polygondata where airportcode = ?;");
+			String airportCode = PropertiesReader.getProperties().getProperty("CURRENT_AIRPORT");
+			queryStatement = connection
+					.prepareStatement("select name,geojson,polygondataid from polygondata where airportcode = ?;");
 			queryStatement.setString(1, airportCode);
 			queryResponse = queryStatement.executeQuery();
-			
+
 			while (queryResponse.next()) {
 				PolygonJson polygonJson = getPolygonJson(queryResponse);
 				polygonJsonList.add(polygonJson);
@@ -47,21 +54,23 @@ public  class UtilDao {
 			closeStatement(queryStatement);
 		}
 	}
-	
+
 	/**
 	 * Get ChildPolygon based on airport code
+	 * 
 	 * @param polygonJson
 	 * @param airportCode
 	 */
-	private void getChildPolygon(PolygonJson polygonJson,String airportCode){
+	private void getChildPolygon(PolygonJson polygonJson, String airportCode) {
 		PreparedStatement queryStatement = null;
 		ResultSet queryResponse = null;
 		try {
-			queryStatement = connection.prepareStatement("select name,geojson,polygondataid from polygondata where airportcode = ? and parentid = ?;");
+			queryStatement = connection.prepareStatement(
+					"select name,geojson,polygondataid from polygondata where airportcode = ? and parentid = ?;");
 			queryStatement.setString(1, airportCode);
 			queryStatement.setInt(2, polygonJson.getPolygonId());
 			queryResponse = queryStatement.executeQuery();
-			
+
 			while (queryResponse.next()) {
 				PolygonJson childPolygonJson = getPolygonJson(queryResponse);
 				polygonJson.getChildpolygon().add(childPolygonJson);
@@ -72,25 +81,27 @@ public  class UtilDao {
 		} finally {
 			closeResultSet(queryResponse);
 			closeStatement(queryStatement);
+			closeConnection();
 		}
 	}
-	
+
 	/**
 	 * Get PolygonJson object from SQL Object
+	 * 
 	 * @param queryResponse
 	 * @return
 	 * @throws Exception
 	 */
-	private PolygonJson getPolygonJson(ResultSet queryResponse) throws Exception{
+	private PolygonJson getPolygonJson(ResultSet queryResponse) throws Exception {
 		PolygonJson polygonJson = new PolygonJson();
-		polygonJson.setPolygonName( queryResponse.getString("name"));
+		polygonJson.setPolygonName(queryResponse.getString("name"));
 		String geoJson = queryResponse.getString("geojson");
-		if(geoJson != null){
+		if (geoJson != null) {
 			GeoJson geoJsonObj = gson.fromJson(geoJson, GeoJson.class);
-			List<List<List<Float>>> coordinatesList  = geoJsonObj.getGeometry().getCoordinates();
-			List<List<Float>> coordinates= coordinatesList.get(0);
-			for(List<Float> coordinate : coordinates){
-				Point point = new Point(coordinate.get(1),coordinate.get(0));
+			List<List<List<Float>>> coordinatesList = geoJsonObj.getGeometry().getCoordinates();
+			List<List<Float>> coordinates = coordinatesList.get(0);
+			for (List<Float> coordinate : coordinates) {
+				Point point = new Point(coordinate.get(1), coordinate.get(0));
 				polygonJson.getCoOrdinates().add(point);
 			}
 		}
@@ -99,9 +110,8 @@ public  class UtilDao {
 		return polygonJson;
 	}
 
-	
-	public void closeResultSet(ResultSet resultSet){
-		if(resultSet != null){
+	public void closeResultSet(ResultSet resultSet) {
+		if (resultSet != null) {
 			try {
 				resultSet.close();
 			} catch (SQLException e) {
@@ -109,10 +119,9 @@ public  class UtilDao {
 			}
 		}
 	}
-	
-	
-	public void closeStatement(Statement queryStatement){
-		if(queryStatement != null){
+
+	public void closeStatement(Statement queryStatement) {
+		if (queryStatement != null) {
 			try {
 				queryStatement.close();
 			} catch (SQLException e) {
@@ -120,7 +129,25 @@ public  class UtilDao {
 			}
 		}
 	}
-	
-	
-	
+
+	public void openConnection() {
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String url = PropertiesReader.getProperties().getProperty("DB_CONNECTION_URL");
+			String userName = PropertiesReader.getProperties().getProperty("DB_CONNECTION_USERNAME");
+			String password = PropertiesReader.getProperties().getProperty("DB_CONNECTION_PASSWORD");
+			connection = DriverManager.getConnection(url, userName, password);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void closeConnection() {
+		try {
+			connection.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
 }

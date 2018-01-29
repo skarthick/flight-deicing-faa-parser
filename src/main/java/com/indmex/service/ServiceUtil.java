@@ -2,28 +2,52 @@ package com.indmex.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import com.google.gson.Gson;
 import com.indmex.dao.UtilDao;
+import com.indmex.polygon.json.FaaMessageJson;
 import com.indmex.polygon.json.FlightInPoly;
-import com.indmex.polygon.json.FlightPolygonList;
 import com.indmex.polygon.json.Point;
 import com.indmex.polygon.json.PolygonJson;
 
 public class ServiceUtil {
-
+	
 	private UtilDao utilDao;
 	private CopyOnWriteArrayList<PolygonJson> polygonJsonList = new CopyOnWriteArrayList<PolygonJson>();
-	PolygonJson polygonJson;
+	private String polygonJsonNoFlightData = null;
 	private Gson gson;
-	private ConcurrentHashMap<String, List<FlightPolygonList>> polygonFilghtList = new ConcurrentHashMap<String, List<FlightPolygonList>>();
 	
-	public void pointInPolygon(float latitude, float longitude, List<PolygonJson> polyJsonsList) {
+	private ServiceUtil(){
+		utilDao = new UtilDao();
+		gson = new Gson();
+		loadPolyData();
+	}
+	
+	private void loadPolyData(){
+		utilDao.loadPolygonData(polygonJsonList);
+		List<PolygonJson> polygonNoFlightDataList = new ArrayList<PolygonJson>();
+		polygonNoFlightDataList.addAll(polygonJsonList);
+		polygonJsonNoFlightData = gson.toJson(polygonNoFlightDataList);
+	}
+	
+	
+	private String getPolygonMessageAsJson(FaaMessageJson faaMessageJson){
+		if(faaMessageJson != null){
+			pointInPolygon(faaMessageJson, polygonJsonList);
+			String result = gson.toJson(polygonJsonList);
+			return result;
+		}
+		
+		return polygonJsonNoFlightData;
+	}
+
+	
+	
+	public void pointInPolygon(FaaMessageJson faaMessageJson, List<PolygonJson> polyJsonsList) {
+		double longitude = faaMessageJson.getLongitude();
+		double latitude = faaMessageJson.getLatitude();
+		
 		for (PolygonJson polygonJson : polyJsonsList) {
 			int cnt = polygonJson.getCoOrdinates().size();
 			Boolean isInside = false;
@@ -35,38 +59,28 @@ public class ServiceUtil {
 								* (longitude - ipoint.getPointLongitude())
 								/ (jpoint.getPointLongitude() - ipoint.getPointLongitude())
 								+ ipoint.getPointLatitude())) {
-					isInside = !isInside;
+					isInside = true;
+					FlightInPoly flightInPoly = new FlightInPoly();
+					flightInPoly.setAircraftType(faaMessageJson.getAircrafType());
+					flightInPoly.setFlightID(faaMessageJson.getFlightId());
+					flightInPoly.setInTime(System.currentTimeMillis());
+					if(!polygonJson.getFlightInPoly().contains(flightInPoly)){
+						polygonJson.getFlightInPoly().add(flightInPoly);
+					}
+					
 				}
 
+			}
+			if(!isInside){
+				removeFlight(polygonJson, faaMessageJson.getFlightId());
 			}
 			if (polygonJson.getChildpolygon().size() > 0) {
-				pointInPolygon(latitude, longitude, polygonJson.getChildpolygon());
+				pointInPolygon(faaMessageJson, polygonJson.getChildpolygon());
 			}
 
 		}
 
 	}
-	
-	
-	private void removeFlightFromPolygon(String flightId){
-		List<FlightPolygonList> flightList = polygonFilghtList.get(flightId);
-		if(flightList != null){
-			for(FlightPolygonList flightPolygonList : flightList){
-				if(flightPolygonList.isChild()){
-					Integer parentPolygonId = 	flightPolygonList.getParentPolygonId();
-					PolygonJson parentPolygonJson =  getPolygonJson(parentPolygonId, polygonJsonList);
-					int childPolygonId = flightPolygonList.getPolygonId();
-					PolygonJson childPolygonJson =   getPolygonJson(childPolygonId, parentPolygonJson.getChildpolygon());
-					removeFlight(childPolygonJson, flightId);
-				}else{
-					Integer polygonId = 	flightPolygonList.getPolygonId();
-					PolygonJson polygonJson =  getPolygonJson(polygonId, polygonJsonList);
-					removeFlight(polygonJson, flightId);
-				}
-			}
-		}
-	}
-	
 	
 	
 	private void removeFlight(PolygonJson polygonJson,String flightId){
@@ -79,48 +93,21 @@ public class ServiceUtil {
 		}
 	}
 	
-	
-	private PolygonJson getPolygonJson(Integer polygonId,List<PolygonJson> polygonsList){
-		PolygonJson tempPolygonJson = new PolygonJson();
-		tempPolygonJson.setPolygonId(polygonId);
-		int pos = polygonsList.indexOf(tempPolygonJson);
-		if(pos != -1){
-			PolygonJson polygonJson = polygonsList.get(pos);
-			return polygonJson;
+	private static ServiceUtil serviceUtil;
+	private static ServiceUtil getInstance(){
+		if(serviceUtil == null){
+			serviceUtil = new ServiceUtil();
 		}
-		return null;
+		return serviceUtil;
 	}
 	
-	
-	public void addFlightInPoly(String flightId,Integer polygonId,Integer parentPolygonId){
-		List<FlightPolygonList> flightList = polygonFilghtList.get(flightId);
-		if(flightList == null){
-			flightList = new ArrayList<FlightPolygonList>();
-			polygonFilghtList.put(flightId, flightList);
-		}
-		FlightPolygonList flightPolygonList = new FlightPolygonList();
-		flightPolygonList.setPolygonId(polygonId);
-		
-		if(!flightList.contains(flightPolygonList)){
-			boolean isChildPoly = true;
-			if(parentPolygonId == null){
-				parentPolygonId = polygonId;
-				isChildPoly = false;
-			}
-			flightPolygonList.setChild(isChildPoly);
-			flightPolygonList.setParentPolygonId(parentPolygonId);
-			flightList.add(flightPolygonList);
-		}
-	}
 	
 
-	public String doProcess() {
+	public static String getPolygonMessage(FaaMessageJson faaMessageJson) {
 		try {
-			utilDao.loadPolygonData(null, polygonJsonList);
-			// Check flight is in polygon or not
+			ServiceUtil serviceUtilInstance = getInstance();
+			return serviceUtilInstance.getPolygonMessageAsJson(faaMessageJson);
 			
-			String result = gson.toJson(polygonJsonList);
-			return result;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
