@@ -5,6 +5,9 @@ import java.util.Properties;
 
 public class PropertiesReader {
 	static Properties mainProperties = null;
+	 // String path = "./src/main/resource/main.properties";
+    //String path = "./main.properties";
+	public static final String propsPath = "./conf/config.properties";
 
 	private PropertiesReader() {
 		
@@ -21,7 +24,7 @@ public class PropertiesReader {
 		    String path = "./main.properties";
 		    
 			// load the file handle for main.properties
-			file = new FileInputStream(path);
+			file = new FileInputStream(propsPath);
 
 			// load all the properties from this file
 			mainProperties.load(file);

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.indmex.polygon.processor.MyProcessor;
+import com.indmex.service.PropertiesReader;
 /**
  * Hello world!
  *
@@ -31,23 +32,20 @@ public class App
 	private String fromTopicName;
 	public String currentAirport;
 	
-	public App(String aPropertiesFileLocation) { 
-		loadPropertiesFromFile(aPropertiesFileLocation);
+	public App() { 
+		loadPropertiesFromFile();
 	}
 	
 	private static final Logger log = LoggerFactory.getLogger(App.class);
 
-	private void loadPropertiesFromFile(String aPropertiesFileLocation) {
+	private void loadPropertiesFromFile() {
 		 
 		// This constructor simply reads in the properties file and gets the
 				// connection information.
-				String aFilePath = getClass().getClassLoader().getResource("") + aPropertiesFileLocation;
 				// The following line removes "parentDirectory/../" and "file:" from the
 				// String.
-				String aNormalizedFilePath = aFilePath.replaceAll("[^/]*/\\.\\./", "").replaceAll("file:", "");
-				Properties theProp = new Properties();
+				Properties theProp = PropertiesReader.getProperties();
 				try {
-					theProp.load(new FileInputStream(aPropertiesFileLocation));
 					fromUserName = theProp.getProperty("FROM_TOPIC_USER_NAME");
 					fromPassword = theProp.getProperty("FROM_TOPIC_PASSWORD");
 					fromConnectionUrl = theProp.getProperty("FROM_TOPIC_CONNECTION_URL");
@@ -60,13 +58,9 @@ public class App
 					
 					currentAirport =  theProp.getProperty("CURRENT_AIRPORT");
 				} catch (NullPointerException e) {
-					log.error("The properties file should be located at " + aNormalizedFilePath + ": ", e);
 					System.exit(1);
 				} catch (ClassCastException e) {
 					log.error("The properties file contains non-string values: ", e);
-					System.exit(1);
-				} catch (IOException e) {
-					log.error("IO Exception: ", e);
 					System.exit(1);
 				}
 	}
@@ -89,7 +83,7 @@ public class App
 			camelContext.addComponent("activemq1", comp1);
 			
 			PropertiesComponent pc = new PropertiesComponent();
-			pc.setLocation("./config.properties"); // the path to your properties file
+			pc.setLocation(PropertiesReader.propsPath); // the path to your properties file
 			camelContext.addComponent("properties", pc);
 			
 			// adding routing logic to route message into diffrent topic
@@ -116,7 +110,7 @@ public class App
 
     public static void main( String[] args )
     {
-    	App app = new App(args[0]);
+    	App app = new App();
 		app.doProcess();
     }
 }

@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PolygonJson {
-	private List<PolygonJson> childpolygon = null;
+	private List<PolygonJson> childpolygon = new ArrayList<PolygonJson>();
 	private String polygonName;
 	private int polygonId;
 	private transient String geoJson;
 	private transient List<Point> coOrdinates = new ArrayList<Point>();
 	private boolean blocked;
-	private List<FlightInPoly> flightInPoly = null;
+	private List<FlightInPoly> flightInPoly = new ArrayList<FlightInPoly>();
 	
 	
 	

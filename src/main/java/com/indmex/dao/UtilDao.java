@@ -20,7 +20,7 @@ public class UtilDao {
 	Gson gson = null;
 
 	public UtilDao() {
-
+		gson = new Gson();
 	}
 
 	/**
@@ -52,6 +52,7 @@ public class UtilDao {
 		} finally {
 			closeResultSet(queryResponse);
 			closeStatement(queryStatement);
+			closeConnection();
 		}
 	}
 
@@ -81,7 +82,7 @@ public class UtilDao {
 		} finally {
 			closeResultSet(queryResponse);
 			closeStatement(queryStatement);
-			closeConnection();
+			
 		}
 	}
 
